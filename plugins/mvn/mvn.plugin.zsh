@@ -1,4 +1,5 @@
 # mvn-color based on https://gist.github.com/1027800
+<<<<<<< HEAD
 export BOLD=`tput bold`
 export UNDERLINE_ON=`tput smul`
 export UNDERLINE_OFF=`tput rmul`
@@ -19,6 +20,28 @@ export BACKGROUND_MAGENTA=`tput setab 5`
 export BACKGROUND_CYAN=`tput setab 6`
 export BACKGROUND_WHITE=`tput setab 7`
 export RESET_FORMATTING=`tput sgr0`
+=======
+BOLD=`tput bold`
+UNDERLINE_ON=`tput smul`
+UNDERLINE_OFF=`tput rmul`
+TEXT_BLACK=`tput setaf 0`
+TEXT_RED=`tput setaf 1`
+TEXT_GREEN=`tput setaf 2`
+TEXT_YELLOW=`tput setaf 3`
+TEXT_BLUE=`tput setaf 4`
+TEXT_MAGENTA=`tput setaf 5`
+TEXT_CYAN=`tput setaf 6`
+TEXT_WHITE=`tput setaf 7`
+BACKGROUND_BLACK=`tput setab 0`
+BACKGROUND_RED=`tput setab 1`
+BACKGROUND_GREEN=`tput setab 2`
+BACKGROUND_YELLOW=`tput setab 3`
+BACKGROUND_BLUE=`tput setab 4`
+BACKGROUND_MAGENTA=`tput setab 5`
+BACKGROUND_CYAN=`tput setab 6`
+BACKGROUND_WHITE=`tput setab 7`
+RESET_FORMATTING=`tput sgr0`
+>>>>>>> upstream/master
 
  
 # Wrapper function for Maven's mvn command.

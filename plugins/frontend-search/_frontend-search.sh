@@ -19,7 +19,11 @@ function _frontend() {
   commands=(
     'jquery: Search in jQuery website'
     'mdn: Search in MDN website'
+<<<<<<< HEAD
     'compass: Search in COMPASS website'
+=======
+    'compassdoc: Search in COMPASS website'
+>>>>>>> upstream/master
     'html5please: Search in HTML5 Please website'
     'caniuse: Search in Can I Use website'
     'aurajs: Search in AuraJs website'
@@ -57,7 +61,11 @@ function _frontend() {
         mdn)
           _describe -t points "Warp points" frontend_points && ret=0
           ;;
+<<<<<<< HEAD
         compass)
+=======
+        compassdoc)
+>>>>>>> upstream/master
           _describe -t points "Warp points" frontend_points && ret=0
           ;;
         html5please)
