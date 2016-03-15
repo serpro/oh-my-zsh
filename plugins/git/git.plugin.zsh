@@ -213,10 +213,5 @@ alias gup='git pull --rebase'
 alias gupv='git pull --rebase -v'
 alias glum='git pull upstream master'
 
-<<<<<<< HEAD
-alias gvt='git verify-tag'
-
-=======
->>>>>>> upstream/master
 alias gwch='git whatchanged -p --abbrev-commit --pretty=medium'
 alias gwip='git add -A; git rm $(git ls-files --deleted) 2> /dev/null; git commit -m "--wip--"'
