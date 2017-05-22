@@ -28,10 +28,118 @@ NLIST_REMEMBER_STATE=0
 list=( "$history[@]" )
 list=( "${(@M)list:#(#i)*$1*}" )
 
-if [ "$#list" -eq 0 ]; then
-    echo "No matching history entries"
-    return 1
-fi
+        n-list "${list[@]}"
+
+        # Selection or quit?
+        if [[ "$REPLY" = -(#c0,1)[0-9]## && ("$REPLY" -lt 0 || "$REPLY" -gt 0) ]]; then
+            break
+        fi
+
+        # View change?
+        if [ "$REPLY" = "F1" ]; then
+            # Target view: 2
+            active_view=1
+            _nhistory_switch_lists_states "1"
+        elif [ "$REPLY" = "HELP" ]; then
+            n-help
+        fi
+
+    #
+    # View 3 - most frequent words in history
+    #
+    elif [ "$active_view" = "2" ]; then
+        local -a dbfile
+        dbfile=( $most_frequent_db(Nm+1) )
+
+        # Compute most frequent history words
+        if [[ "${#NHISTORY_WORDS}" -eq "0" || "${#dbfile}" -ne "0" ]]; then
+            # Read the list if it's there
+            local -a list
+            list=()
+            [ -s "$most_frequent_db" ] && list=( ${(f)"$(<$most_frequent_db)"} )
+
+            # Will wait for the data?
+            local message=0
+            if [[ "${#list}" -eq 0 ]]; then
+                message=1
+                _nlist_alternate_screen 1
+                zcurses init
+                zcurses delwin info 2>/dev/null
+                zcurses addwin info "$term_height" "$term_width" 0 0
+                zcurses bg info white/black
+                zcurses string info "Computing most frequent history words..."$'\n'
+                zcurses string info "(This is done once per day, from now on transparently)"$'\n'
+                zcurses refresh info
+                sleep 3
+            fi
+
+            # Start periodic list regeneration?
+            if [[ "${#list}" -eq 0 || "${#dbfile}" -ne "0" ]]; then
+                # Mark the file with current time, to prevent double
+                # regeneration (on quick double change of view)
+                print >> "$most_frequent_db"
+                (_nhistory_generate_most_frequent &) &> /dev/null
+            fi
+
+            # Ensure we got the list, wait for it if needed
+            while [[ "${#list}" -eq 0 ]]; do
+                zcurses string info "."
+                zcurses refresh info
+                LANG=C sleep 0.5
+                [ -s "$most_frequent_db" ] && list=( ${(f)"$(<$most_frequent_db)"} )
+            done
+
+            NHISTORY_WORDS=( "${list[@]}" )
+
+            if [ "$message" -eq "1" ]; then
+                zcurses delwin info 2>/dev/null
+                zcurses refresh
+                zcurses end
+                _nlist_alternate_screen 0
+            fi
+        else
+            # Reuse most frequent history words
+            local -a list
+            list=( "${NHISTORY_WORDS[@]}" )
+        fi
+
+        n-list "${list[@]}"
+
+        if [ "$REPLY" = "F1" ]; then
+            # Target view: 1
+            active_view=0
+            _nhistory_switch_lists_states "0"
+        elif [[ "$REPLY" = -(#c0,1)[0-9]## && "$REPLY" -lt 0 ]]; then
+            break
+        elif [[ "$REPLY" = -(#c0,1)[0-9]## && "$REPLY" -gt 0 ]]; then
+            local word="${reply[REPLY]#(#s) #[0-9]##$'\t'}"
+            one_NLIST_SEARCH_BUFFER="$word"
+            one_NLIST_SEARCH_BUFFER="${one_NLIST_SEARCH_BUFFER## ##}"
+
+            # Target view: 1
+            active_view=0
+            _nhistory_switch_lists_states "0"
+        elif [ "$REPLY" = "HELP" ]; then
+            n-help
+        fi
+
+    #
+    # View 2 - private history
+    #
+    elif [ "$active_view" = "1" ]; then
+        if [ -s "$private_history_db" ]; then
+            local title=$'\x1b[00;32m'"Private history:"$'\x1b[00;00m\0'
+            () { fc -Rap "$private_history_db" 20000 0; list=( "$title" ${history[@]} ) }
+        else
+            list=( "Private history - history entries selected via this tool will be put here" )
+        fi
+
+        n-list "${list[@]}"
+
+        # Selection or quit?
+        if [[ "$REPLY" = -(#c0,1)[0-9]## && ("$REPLY" -lt 0 || "$REPLY" -gt 0) ]]; then
+            break
+        fi
 
 local NLIST_GREP_STRING="$1"
 local NLIST_REPLACE_NEWLINES="1"
@@ -39,16 +147,37 @@ n-list "${list[@]}"
 
 if [ "$REPLY" -gt 0 ]; then
     selected="$reply[REPLY]"
+
+    # Append to private history
+    if [[ "$active_view" = "0" ]]; then
+        local newline=$'\n'
+        local selected_ph="${selected//$newline/\\$newline}"
+        print -r -- "$selected_ph" >> "$private_history_db"
+    fi
+
+    # TMUX?
+    if [[ "$ZNT_TMUX_MODE" = "1" ]]; then
+        tmux send -t "$ZNT_TMUX_ORIGIN_SESSION:$ZNT_TMUX_ORIGIN_WINDOW.$ZNT_TMUX_ORIGIN_PANE" "$selected"
+        tmux kill-window
+        return 0
     # ZLE?
-    if [ "${(t)CURSOR}" = "integer-local-special" ]; then
-        zle redisplay
-        zle kill-buffer
-        zle -U "$selected"
+    elif [ "${(t)CURSOR}" = "integer-local-special" ]; then
+        zle .redisplay
+        zle .kill-buffer
+        LBUFFER+="$selected"
     else
         print -zr "$selected"
     fi
 else
-    [ "${(t)CURSOR}" = "integer-local-special" ] && zle redisplay
+    # TMUX?
+    if [[ "$ZNT_TMUX_MODE" = "1" ]]; then
+        tmux kill-window
+    # ZLE?
+    elif [[ "${(t)CURSOR}" = "integer-local-special" ]]; then
+        zle redisplay
+    fi
 fi
+
+return 0
 
 # vim: set filetype=zsh:
